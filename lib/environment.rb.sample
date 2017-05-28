@@ -1,0 +1,4 @@
+# environment.rb.sample
+# Copy this file to environment.rb and change the name and password to your credentials
+ENV['gro_username'] = ''
+ENV['gro_password'] = ''

@@ -2,13 +2,11 @@ require 'rspec'
 require './lib/base_extractor'
 require './lib/gro_extractor'
 require './lib/gro_deaths_extractor'
+require './lib/environment'
 
 describe GroDeathsExtractor do
 
-  username = ''
-  password = ''
-
-  extractor = GroDeathsExtractor.new username, password
+  extractor = GroDeathsExtractor.new ENV['gro_username'], ENV['gro_password']
   menu_page = extractor.login()
   search_gro_indexes_page = extractor.select_search_gro_indexes(menu_page)
 

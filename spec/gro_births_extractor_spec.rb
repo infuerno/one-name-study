@@ -2,23 +2,21 @@ require 'rspec'
 require './lib/base_extractor'
 require './lib/gro_extractor'
 require './lib/gro_births_extractor'
+require './lib/environment'
 
 describe GroBirthsExtractor do
 
-  username = ''
-  password = ''
-
-  extractor = GroBirthsExtractor.new username, password
+  extractor = GroBirthsExtractor.new ENV['gro_username'], ENV['gro_password']
   menu_page = extractor.login()
   search_gro_indexes_page = extractor.select_search_gro_indexes(menu_page)
 
   search_type = extractor.get_search_type
 
-  it "should get birth search type" do
+  it 'should get birth search type' do
     expect(search_type).to eq(:birth)
   end
 
-  describe "when selecting search type births" do
+  describe 'when selecting search type births' do
     search_page = extractor.select_search_type(search_gro_indexes_page, search_type)
 
     it 'should get a page after selecting the birth search type' do
@@ -33,7 +31,7 @@ describe GroBirthsExtractor do
       expect(search_page.search("td[text()='Surname at Birth:']").length).to eq(1)
     end
 
-    describe "when searching" do
+    describe 'when searching' do
       results_page = extractor.search(search_page, 'Furney', :male, 1837)
 
       it 'should get a page' do
@@ -44,37 +42,141 @@ describe GroBirthsExtractor do
         expect(results_page.uri.path).to eq("/gro/content/certificates/indexes_search.asp")
       end
 
-      describe ".get_results_rows" do
+      describe '.get_results_rows' do
 
         describe "search with no results" do
           results_page = extractor.search(search_page, 'Furney', :male, 1837)
           results_rows = extractor.get_results_rows(results_page)
-          it 'should get results rows' do
+          it 'should get some results rows' do
             expect(results_rows).to be
           end
 
-          it 'should get text only rows' do
+          it 'should get header only rows' do
             expect(results_rows.count).to eq(2)
           end
 
-          # TODO check for No Results
+          describe ".get_results_stats" do
+            results_count, current_page, page_count = extractor.get_results_stats(results_rows[-1])
+            it 'should get 0 results' do
+              expect(results_count).to eq(0)
+            end
+          end
         end
 
-        describe "search with one result" do
+        describe "search with 1 result" do
           results_page = extractor.search(search_page, 'Furney', :male, 1838)
+          results_rows = extractor.get_results_rows(results_page)
 
-          it 'should get results rows' do
-            results_rows = extractor.get_results_rows(results_page)
+          it 'should get some results rows' do
             expect(results_rows).to be
           end
 
-          it 'should get 5 header and footer rows and 2 rows for the result' do
+          it 'should get 5 header and footer rows and 2 rows for the 1 result' do
             expected_number_results = 1
             number_header_and_footer_rows = 5
-            results_rows = extractor.get_results_rows(results_page)
             expect(results_rows.count).to eq(number_header_and_footer_rows + expected_number_results * 2)
           end
+
+          describe ".get_results_stats" do
+            results_count, current_page, page_count = extractor.get_results_stats(results_rows[-1])
+            it 'should get 1 result' do
+              expect(results_count).to eq(1)
+            end
+            it 'should get be on page 1' do
+              expect(current_page).to eq(1)
+            end
+            it 'should have total pages of 1' do
+              expect(page_count).to eq(1)
+            end
+          end
         end
+
+        describe "search with multiple results on a single page" do
+          results_page = extractor.search(search_page, 'Furney', :female, 1838)
+          results_rows = extractor.get_results_rows(results_page)
+
+          it 'should get results rows' do
+            expect(results_rows).to be
+          end
+
+          it 'should get 5 header and footer rows and 4 rows for the 2 results' do
+            expected_number_results = 2
+            number_header_and_footer_rows = 5
+            expect(results_rows.count).to eq(number_header_and_footer_rows + expected_number_results * 2)
+          end
+
+          describe 'get_results_stats' do
+            results_count, current_page, page_count = extractor.get_results_stats(results_rows[-1])
+            it 'should get results_count of 2' do
+              expect(results_count).to eq(2)
+            end
+            it 'should get current_page of 1' do
+              expect(current_page).to eq(1)
+            end
+            it 'should have total pages of 1' do
+              expect(page_count).to eq(1)
+            end
+          end
+        end
+
+        describe 'search with multiple results on multiple pages' do
+          results_page = extractor.search(search_page, 'Smith', :male, 1837)
+          results_rows = extractor.get_results_rows(results_page)
+
+          it 'should get results rows' do
+            expect(results_rows).to be
+          end
+
+          it 'should get 5 header and footer rows and 100 rows for the 50 results' do
+            expected_number_results = 50
+            number_header_and_footer_rows = 5
+            expect(results_rows.count).to eq(number_header_and_footer_rows + expected_number_results * 2)
+          end
+
+          describe 'get_results_stats' do
+            results_count, current_page, page_count = extractor.get_results_stats(results_rows[-1])
+            it 'should get results_count of 250' do
+              expect(results_count).to eq(250)
+            end
+            it 'should get current_page of 1' do
+              expect(current_page).to eq(1)
+            end
+            it 'should have total pages of 5' do
+              expect(page_count).to eq(5)
+            end
+          end
+        end
+      end
+    end
+
+    describe '.parse_results' do
+      results_page = extractor.search(search_page, 'Furney', :male, 1838)
+      results_rows = extractor.get_results_rows(results_page)
+      it 'should get an entry for every result' do
+        number_results = (results_rows.length - 5) /2
+        entries = extractor.parse_results(results_rows)
+        expect(entries.length).to eq(number_results)
+      end
+
+      it 'should get a populated entry for a result' do
+        entries = extractor.parse_results(results_rows)
+        expect(entries[0].entry_id).to eq('5T6E7381A7I3774E9CC02I4MFX1LR74E')
+        expect(entries[0].forenames).to eq('WILLIAM')
+        expect(entries[0].surname).to eq('FURNEY')
+        expect(entries[0].mothers_maiden_name).to eq('-')
+        expect(entries[0].year).to eq('1838')
+        expect(entries[0].quarter).to eq('J')
+        expect(entries[0].location).to eq('SAINT GEORGE THE MARTYR SOUTHWARK')
+        expect(entries[0].volume).to eq('04')
+        expect(entries[0].page).to eq('137')
+      end
+
+      it 'should append entries if exisiting array passed' do
+        entries = [1,2,3]
+        previous_length_of_entries_array = entries.length
+        number_results = (results_rows.length - 5) /2
+        entries = extractor.parse_results(results_rows,entries)
+        expect(entries.length).to eq(number_results + previous_length_of_entries_array)
       end
     end
 

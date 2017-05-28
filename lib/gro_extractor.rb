@@ -3,6 +3,7 @@ require 'nokogiri'
 require 'json'
 require 'net/http'
 
+require './lib/base_extractor'
 
 class GroExtractor < BaseExtractor
   BASE_URL = 'https://www.gro.gov.uk'
@@ -26,30 +27,31 @@ class GroExtractor < BaseExtractor
     entries = Array.new
     searches.each do |year, range|
       sleep @wait_between_requests
-      page = search(page, surname, gender, year, range)
+      results_page = search(search_page, surname, gender, year, range)
 
-      results_rows = get_results_rows(page)
+      results_rows = get_results_rows(results_page)
       results_count, current_page, page_count = get_results_stats(results_rows[-1])
 
       if results_count == 0 then
-        puts "No matching results found"
+        puts "No matching results found, continuing with next search in batch"
         next
       end
 
       puts "Parsing results for page: #{current_page} of #{page_count}"
-      entries = parse_results(results_rows[2..-4], entries)
+      entries = parse_results(results_rows, entries)
 
+      # get the next page if multiple pages
       while current_page < page_count
         puts 'More pages, getting next one...'
         sleep @wait_between_requests # pause 2 seconds so as not to overload the server
         page.form_with('SearchIndexes') do |form|
-          page = form.submit(form.button_with(:value => 'Next Page')) # Next Page button
+          results_page = form.submit(form.button_with(:value => 'Next Page')) # Next Page button
         end
 
-        results_rows = get_results_rows(page)
+        results_rows = get_results_rows(results_page)
         results_count, current_page, page_count = get_results_stats(results_rows[-1])
         puts "Parsing results for page: #{current_page} of #{page_count}"
-        entries = parse_results(results_rows[2..-4], entries)
+        entries = parse_results(results_rows, entries)
       end
     end
     entries
@@ -130,8 +132,10 @@ class GroExtractor < BaseExtractor
     end
   end
 
-  def parse_results(results_rows, entries)
-    # there are 2 rows for each result, starting on the third row
+  def parse_results(results_rows, entries=[])
+    results_rows = remove_header_and_footer_rows(results_rows)
+
+    # there are 2 rows for each result
     Array(0...results_rows.length).select {|i| i % 2 == 0 }.each do |i| # e.g for 3 results will give array 2,4,6
 
       count_info_output_size = 20
@@ -144,16 +148,22 @@ class GroExtractor < BaseExtractor
       tds = results_rows[i].css('td')
       surname, forenames = tds[0].text.delete("\n\t\r").gsub(NBSP, ' ').split(',').collect {|s| s.strip}
       mothers_maiden_name = tds[1].text.delete("\n\t\r").gsub(NBSP, ' ').strip
+      order_url = tds[2].at_css('a[href]').values[0]
+      entry_id = order_url.split('EntryID=')[1]
 
       gro_reference = results_rows[i + 1].text.delete("\n\t\r").gsub(NBSP, ' ').strip
       year, quarter, location, volume, page = /GRO Reference:(\d+) ([MJSD]) Quarterin([A-Z\-\.\', ]+) Volume (\w+) Page (\w+)/.match(gro_reference)[1..-1].collect{|s| s.strip.delete(',')}
-      entry = get_entry(i, surname, forenames, mothers_maiden_name, year, quarter, location, volume, page)
+      entry = get_entry(entry_id, forenames, surname, mothers_maiden_name, year, quarter, location, volume, page)
       puts "Parsed entry: #{entry.to_s}"
       entries.push(entry)
     end
     entries
   end
 
+  # 2 rows for the header and 3 rows for the footer
+  def remove_header_and_footer_rows(results_rows)
+    results_rows[2..-4]
+  end
 end
 
 
