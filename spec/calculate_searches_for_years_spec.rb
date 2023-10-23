@@ -1,6 +1,6 @@
 require 'rspec'
-require './lib/base_extractor'
-require './lib/gro_extractor'
+require './lib/extractors/base_extractor'
+require './lib/extractors/gro_extractor'
 
 describe ".calculate_searches_for_years" do
 

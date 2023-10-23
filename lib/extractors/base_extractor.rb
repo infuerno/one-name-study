@@ -1,3 +1,4 @@
+
 class BaseExtractor
 
   def initialize(wait_between_requests = 2)

@@ -2,4 +2,5 @@
 .DS_Store
 results/
 config.ru
-environment.rb
+config/environment.rb
+config/database.yml

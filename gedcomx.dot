@@ -1,0 +1,20 @@
+digraph d {
+    fontname = "Bitstream Vera Sans"
+    fontsize = 8
+
+    node[shape=record, fontname = "Bitstream Vera Sans", fontsize=8]
+    edge[dir=back, arrowtail=empty, fontname = "Bitstream Vera Sans", fontsize=8]
+
+    conclusion[label = "{conclusion|id : string\nsources : SourceReference|...}"]
+    subject[label = "{subject|...|...}"]
+    person[label = "{person|private : bool\nname : Name\ngender : enum\nfacts : Fact[]|...}"]
+    relationship[label= "{relationship|type : enum\nperson1 : Person\nperson2 : Person\nfacts : Fact[]|...}"]
+    place_description[label= "{place_description|names\ntype\nplace\njurisdication\nlatitude\nlongitude|...}"]
+
+    conclusion->subject
+    subject->person
+    subject->relationship
+    subject->place_description
+    subject->event
+}
+
