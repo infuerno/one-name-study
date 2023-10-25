@@ -96,7 +96,7 @@ class GroExtractor < BaseExtractor
       end
 
       puts "Parsing results for page: #{current_page} of #{page_count}"
-      entries = parse_results(gender, results_rows, entries)
+      entries = parse_results(year, gender, results_rows, entries)
 
       # get the next page if multiple pages
       while current_page < page_count
@@ -109,7 +109,7 @@ class GroExtractor < BaseExtractor
         results_rows = get_results_rows(results_page)
         results_count, current_page, page_count = get_results_stats(results_rows[-1])
         puts "Parsing results for page: #{current_page} of #{page_count}"
-        entries = parse_results(gender, results_rows, entries)
+        entries = parse_results(year, gender, results_rows, entries)
       end
     end
     entries
@@ -175,7 +175,7 @@ class GroExtractor < BaseExtractor
     end
   end
 
-  def parse_results(gender, results_rows, entries=[])
+  def parse_results(search_year, gender, results_rows, entries=[])
     results_rows = remove_header_and_footer_rows(results_rows)
 
     # there are 2 rows for each result
@@ -195,8 +195,21 @@ class GroExtractor < BaseExtractor
 
       gro_reference = results_rows[i + 1].css('td text()')[1].text.delete("\n\t\r").gsub(NBSP, ' ').strip
       puts "Applying regex to: #{gro_reference}"
-      year, quarter, location, volume, page = /(\d+) ([MJSD]) Quarterin([\w&, \-\.\']+) Volume (\w+) Page (\w+)/.match(gro_reference)[1..-1].collect{|s| s.strip.delete(',')}
-      entry = get_entry(entry_id, forenames, surname, mothers_maiden_name, gender, year, quarter, location, volume, page)
+
+      if (search_year <= 1950) # slighly random ... allow leeway for 5 years range in search
+        regex = /(\d{4}) ([MJSD]) Quarterin([\w&, \-\.\']+) Volume (\w+) Page (\w+)/
+        year, quarter, location, volume, page = regex.match(gro_reference)[1..-1].collect{|s| s.strip.delete(',')}
+      else
+        regex = /DOR (Q[1234])\/(\d{4})in ([\w&, \-\.\'\/]+) \(([\w\-]+)\) (?:(Volume \w+ Page \w+|Reg \w+|Page 0 Reg \w+|)) ?(Entry Number \d+)/
+        quarter, year, location, ref1, ref2, ref3 = regex.match(gro_reference)[1..-1].collect{|s| s == nil ? nil : s.strip.delete(',')}
+        if (ref2 && ref2.start_with?("Volume"))
+          volume, page = /Volume (\w+) Page (\w+)/.match(ref2)[1..-1].collect{|s| s == nil ? nil : s.strip.delete(',')}
+          reference = "#{ref1} #{ref3}"
+        else
+          reference = "#{ref1} #{ref2} #{ref3}".gsub("  ", " ")
+        end
+      end
+      entry = get_entry(entry_id, forenames, surname, mothers_maiden_name, gender, year, quarter, location, volume, page, reference)
       puts "Parsed entry: #{entry.to_s}"
       entries.push(entry)
     end

@@ -1,7 +1,7 @@
 class GroBirthsExtractor < GroExtractor
-  Entry = Struct.new(:entry_id, :forenames, :surname, :mothers_maiden_name, :gender, :year, :quarter, :location, :volume, :page) do
+  Entry = Struct.new(:entry_id, :forenames, :surname, :mothers_maiden_name, :gender, :year, :quarter, :location, :volume, :page, :reference) do
     def to_s
-      "#{entry_id},#{forenames},#{surname},#{mothers_maiden_name},#{gender},#{year},#{quarter},#{location},#{volume},#{page}"
+      "#{entry_id},#{forenames},#{surname},#{mothers_maiden_name},#{gender},#{year},#{quarter},#{location},#{volume},#{page},#{reference}"
     end
   end
 
@@ -13,11 +13,11 @@ class GroBirthsExtractor < GroExtractor
     :birth
   end
 
-  def get_entry(entry_id, forenames, surname, mothers_maiden_name, gender, year, quarter, location, volume, page)
-    Entry.new(entry_id, forenames, surname, mothers_maiden_name, gender, year, quarter, location, volume, page)
+  def get_entry(entry_id, forenames, surname, mothers_maiden_name, gender, year, quarter, location, volume, page, reference)
+    Entry.new(entry_id, forenames, surname, mothers_maiden_name, gender, year, quarter, location, volume, page, reference)
   end
 
   def get_headers
-    "entry_id,forenames,surname,mothers_maiden_name,gender,year,quarter,location,volume,page"
+    "entry_id,forenames,surname,mothers_maiden_name,gender,year,quarter,location,volume,page,reference"
   end
 end

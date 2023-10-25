@@ -12,4 +12,14 @@
 
 ## Adhoc script
 
+1. Update parameters in script
+2. `ruby scripts/adhoc.rb`
+3. Results will be saved in "results" directory with filename `surname_dateime.csv`
+
+
+## TODO
+
+1. Sort results
+2. Allow "both" male and female searches
+3. Tests for various search years and GRO references
 
