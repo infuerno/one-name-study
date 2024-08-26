@@ -1,4 +1,4 @@
-ruby '3.2.2'
+ruby '3.3.4'
 source 'https://rubygems.org'
 
 gem 'mechanize'

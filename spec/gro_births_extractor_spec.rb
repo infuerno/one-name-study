@@ -155,12 +155,12 @@ describe GroBirthsExtractor do
     results_rows = extractor.get_results_rows(results_page)
     it 'should get an entry for every result' do
       number_results = (results_rows.length - NUMBER_OF_HEADER_AND_FOOTER_ROWS) /2
-      entries = extractor.parse_results(:male, results_rows)
+      entries = extractor.parse_results(1838, :male, results_rows)
       expect(entries.length).to eq(number_results)
     end
 
     it 'should get a populated entry for a result' do
-      entries = extractor.parse_results(:male, results_rows)
+      entries = extractor.parse_results(1838, :male, results_rows)
       expect(entries[0].entry_id).to eq('1838.5T6E7381A7I3774E9CC02I4MFX1LR74E.1838.False')
       expect(entries[0].forenames).to eq('WILLIAM')
       expect(entries[0].surname).to eq('FURNEY')
@@ -176,7 +176,7 @@ describe GroBirthsExtractor do
       entries = [1,2,3]
       previous_length_of_entries_array = entries.length
       number_results = (results_rows.length - NUMBER_OF_HEADER_AND_FOOTER_ROWS) / 2
-      entries = extractor.parse_results(:male, results_rows, entries)
+      entries = extractor.parse_results(1838, :male, results_rows, entries)
       expect(entries.length).to eq(number_results + previous_length_of_entries_array)
     end
   end
